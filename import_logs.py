@@ -32,13 +32,11 @@ import re
 import sys
 import threading
 import time
-import urllib
 import urllib2
 import urlparse
-import subprocess
 import functools
 import traceback
-import socket
+import MySQLdb as mdb
 
 try:
     import json
@@ -1036,6 +1034,161 @@ Processing your log data
         self.monitor_stop = True
 
 
+class Recorder(object):
+    """
+    A Recorder fetches hits from the Queue and inserts them into database.
+    """
+
+    recorders = []
+
+    db_host = 'localhost'
+    db_name = 'icecast'
+    db_user = 'root'
+    db_pass = ''
+
+
+    def __init__(self):
+        self.queue = Queue.Queue(maxsize=2)
+
+        # if bulk tracking disabled, make sure we can store hits outside of the Queue
+        if not config.options.use_bulk_tracking:
+            self.unrecorded_hits = []
+
+        self.connection = mdb.connect(
+            self.db_host, self.db_user, self.db_pass,
+            self.db_name, charset='utf8')
+
+    @classmethod
+    def launch(cls, recorder_count):
+        """
+        Launch a bunch of Recorder objects in a separate thread.
+        """
+        for i in xrange(recorder_count):
+            recorder = Recorder()
+            cls.recorders.append(recorder)
+
+            run = recorder._run_bulk if config.options.use_bulk_tracking else recorder._run_single
+            t = threading.Thread(target=run)
+
+            t.daemon = True
+            t.start()
+            logging.debug('Launched recorder')
+
+    @classmethod
+    def add_hits(cls, all_hits):
+        """
+        Add a set of hits to the recorders queue.
+        """
+        # Organize hits so that one client IP will always use the same queue.
+        # We have to do this so visits from the same IP will be added in the right order.
+        hits_by_client = [[] for r in cls.recorders]
+        for hit in all_hits:
+            hits_by_client[hit.get_visitor_id_hash() % len(cls.recorders)].append(hit)
+
+        for i, recorder in enumerate(cls.recorders):
+            recorder.queue.put(hits_by_client[i])
+
+    @classmethod
+    def wait_empty(cls):
+        """
+        Wait until all recorders have an empty queue.
+        """
+        for recorder in cls.recorders:
+            recorder._wait_empty()
+
+    def _run_bulk(self):
+        while True:
+            hits = self.queue.get()
+            if len(hits) > 0:
+                try:
+                    self._record_hits(hits)
+                except Exception, e:
+                    fatal_error(e, hits[0].filename, hits[0].lineno) # approximate location of error
+            self.queue.task_done()
+
+    def _run_single(self):
+        while True:
+            if config.options.force_one_action_interval != False:
+                time.sleep(config.options.force_one_action_interval)
+
+            if len(self.unrecorded_hits) > 0:
+                hit = self.unrecorded_hits.pop(0)
+
+                try:
+                    self._record_hits([hit])
+                except Exception, e:
+                    fatal_error(e, hit.filename, hit.lineno)
+            else:
+                self.unrecorded_hits = self.queue.get()
+                self.queue.task_done()
+
+    def _wait_empty(self):
+        """
+        Wait until the queue is empty.
+        """
+        while True:
+            if self.queue.empty():
+                # We still have to wait for the last queue item being processed
+                # (queue.empty() returns True before queue.task_done() is
+                # called).
+                self.queue.join()
+                return
+            time.sleep(1)
+
+    def date_to_piwik(self, date):
+        date, time = date.isoformat(sep=' ').split()
+        return '%s %s' % (date, time.replace('-', ':'))
+
+
+    def _record_hits(self, hits):
+        """
+        Inserts several hits into database.
+        """
+        sql = """
+            INSERT INTO access_log (ip, filename, is_download, session_time,
+                is_redirect, event_category, event_action, lineno, status,
+                is_error, event_name, date, path, extension, referrer, userid,
+                length, user_agent, generation_time_milli, query_string,
+                is_robot, full_path)
+            VALUES (%(ip)s, %(filename)s, %(is_download)s, %(session_time)s,
+                %(is_redirect)s, %(event_category)s, %(event_action)s,
+                %(lineno)s, %(status)s, %(is_error)s, %(event_name)s, %(date)s,
+                %(path)s, %(extension)s, %(referrer)s, %(userid)s,
+                %(length)s, %(user_agent)s, %(generation_time_milli)s,
+                %(query_string)s, %(is_robot)s, %(full_path)s)
+        """
+        with self.connection.cursor() as c:
+            for hit in hits:
+                c.execute(sql, hit.__dict__)
+
+        stats.count_lines_recorded.advance(len(hits))
+
+    def _is_json(self, result):
+        try:
+            json.loads(result)
+            return True
+        except ValueError, e:
+            return False
+
+    def _on_tracking_failure(self, response, data):
+        """
+        Removes the successfully tracked hits from the request payload so
+        they are not logged twice.
+        """
+        try:
+            response = json.loads(response)
+        except:
+            # the response should be in JSON, but in case it can't be parsed just try another attempt
+            logging.debug("cannot parse tracker response, should be valid JSON")
+            return response
+
+        # remove the successfully tracked hits from payload
+        tracked = response['tracked']
+        data['requests'] = data['requests'][tracked:]
+
+        return response['message']
+
+
 class Hit(object):
     """
     It's a simple container.
@@ -1450,6 +1603,15 @@ class Parser(object):
             except:
                 pass
 
+            # add session time
+            try:
+                hit.session_time = None
+
+                session_time = format.get('session_time')
+                hit.session_time = int(session_time)
+            except:
+                pass
+
             # Check if the hit must be excluded.
             if not all((method(hit) for method in self.check_methods)):
                 continue
@@ -1494,8 +1656,12 @@ class Parser(object):
                     continue
 
             hits.append(hit)
-            for hit in hits:
-                print hit.__dict__
+            if len(hits) >= config.options.recorder_max_payload_size * len(Recorder.recorders):
+                Recorder.add_hits(hits)
+                hits = []
+        if len(hits) > 0:
+            Recorder.add_hits(hits)
+
 
     def _add_custom_vars_from_regex_groups(self, hit, format, groups, is_page_var):
         for group_name, custom_var_name in groups.iteritems():
@@ -1520,10 +1686,13 @@ def main():
     if config.options.show_progress:
         stats.start_monitor()
 
+    recorders = Recorder.launch(config.options.recorders)
+
     try:
         for filename in config.filenames:
             parser.parse(filename)
 
+        Recorder.wait_empty()
     except KeyboardInterrupt:
         pass
 
