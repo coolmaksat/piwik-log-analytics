@@ -1,1 +1,1 @@
-1.2.3.4 - - [10/Feb/2012:16:42:07 -0500] "GET / HTTP/1.0" 301 368 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11" 1807
+127.0.0.1 - - [12/Apr/2015:10:04:56 +0300] "GET /URBAN_256k HTTP/1.0" 200 7208702 "-" "AppleCoreMedia/1.0.0.12F70 (iPhone; U; CPU OS 8_3 like Mac OS X; ru_ru)" 223
