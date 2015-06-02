@@ -1,1 +1,13 @@
-127.0.0.1 - - [12/Apr/2015:10:04:56 +0300] "GET /URBAN_256k HTTP/1.0" 200 7208702 "-" "AppleCoreMedia/1.0.0.12F70 (iPhone; U; CPU OS 8_3 like Mac OS X; ru_ru)" 223
+127.0.0.1 - - [11/Apr/2015:10:54:48 +0300] "GET /LOUNGE_256k HTTP/1.0" 200 2251128 "-" "Samsung SM-G800H stagefright/1.2 (Linux;Android 4.4.2)" 69
+127.0.0.1 - - [11/Apr/2015:10:54:48 +0300] "GET /NE.FM HTTP/1.0" 200 3890782 "-" "Samsung GT-I9505 stagefright/1.2 (Linux;Android 4.4.2)" 239
+127.0.0.1 - - [11/Apr/2015:10:54:49 +0300] "GET /URBAN_256k HTTP/1.0" 200 285048 "-" "stagefright/1.2 (Linux;Android 4.1.2)" 7
+127.0.0.1 - - [11/Apr/2015:10:54:49 +0300] "GET /NE.FM_64k HTTP/1.0" 200 1107291 "-" "WinampMPEG/5.62, Ultravox/2.1" 130
+127.0.0.1 - - [11/Apr/2015:10:54:51 +0300] "GET /URBAN HTTP/1.0" 200 152973 "-" "Samsung GT-I9505 stagefright/1.2 (Linux;Android 4.4.2)" 6
+127.0.0.1 - - [11/Apr/2015:10:54:59 +0300] "GET /NE.FM_256k HTTP/1.0" 200 2421019 "http://ne.fm/" "AppleCoreMedia/1.0.0.12F70 (iPhone; U; CPU OS 8_3 like Mac OS X; ru_ru)" 74
+127.0.0.1 - - [11/Apr/2015:10:54:59 +0300] "GET /NE.FM_256k HTTP/1.0" 200 134583 "http://ne.fm/" "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.118 Safari/537.36" 2
+127.0.0.1 - - [11/Apr/2015:10:55:00 +0300] "GET /NE.FM_256k HTTP/1.0" 200 7247412 "-" "stagefright/1.2 (Linux;Android 4.0.4)" 224
+127.0.0.1 - - [11/Apr/2015:10:55:05 +0300] "GET /LOUNGE_256k HTTP/1.0" 200 78576 "-" "AppleCoreMedia/1.0.0.12B411 (iPhone; U; CPU OS 8_1 like Mac OS X; ru_ru)" 0
+127.0.0.1 - - [11/Apr/2015:10:55:07 +0300] "GET /NE.FM_256k HTTP/1.0" 200 67709 "http://ne.fm/" "Mozilla/5.0 (iPhone; CPU iPhone OS 8_3 like Mac OS X) AppleWebKit/600.1.4 (KHTML, like Gecko) CriOS/41.0.2272.58 Mobile/12F70 Safari/600.1.4 (000948)" 0
+127.0.0.1 - - [11/Apr/2015:10:55:21 +0300] "GET /NE.FM_256k HTTP/1.0" 200 66874 "http://ne.fm/" "Mozilla/5.0 (Linux; Android 4.2.2; GT-I9082 Build/JDQ39) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.115 YaBrowser/15.2.2214.3725.00 Mobil" 0
+127.0.0.1 - - [11/Apr/2015:10:55:22 +0300] "GET /NE.FM_256k HTTP/1.0" 200 68546 "-" "Mozilla/5.0 (Linux; Android 4.2.2; GT-I9082 Build/JDQ39) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.115 YaBrowser/15.2.2214.3725.00 Mobil" 0
+127.0.0.1 - - [11/Apr/2015:10:55:22 +0300] "GET /NE.FM_256k HTTP/1.0" 200 782420 "http://ne.fm/" "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.118 Safari/537.36" 22

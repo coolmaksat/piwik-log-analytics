@@ -1054,10 +1054,6 @@ class Recorder(object):
         if not config.options.use_bulk_tracking:
             self.unrecorded_hits = []
 
-        self.connection = mdb.connect(
-            self.db_host, self.db_user, self.db_pass,
-            self.db_name, charset='utf8')
-
     @classmethod
     def launch(cls, recorder_count):
         """
@@ -1144,23 +1140,39 @@ class Recorder(object):
         """
         Inserts several hits into database.
         """
+        self.connection = mdb.connect(
+            host=self.db_host, user=self.db_user, passwd=self.db_pass,
+            db=self.db_name, charset='utf8')
+
         sql = """
             INSERT INTO access_log (ip, filename, is_download, session_time,
                 is_redirect, event_category, event_action, lineno, status,
                 is_error, event_name, date, path, extension, referrer, userid,
                 length, user_agent, generation_time_milli, query_string,
                 is_robot, full_path)
-            VALUES (%(ip)s, %(filename)s, %(is_download)s, %(session_time)s,
-                %(is_redirect)s, %(event_category)s, %(event_action)s,
-                %(lineno)s, %(status)s, %(is_error)s, %(event_name)s, %(date)s,
-                %(path)s, %(extension)s, %(referrer)s, %(userid)s,
-                %(length)s, %(user_agent)s, %(generation_time_milli)s,
-                %(query_string)s, %(is_robot)s, %(full_path)s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        with self.connection.cursor() as c:
+        try:
+            c = self.connection.cursor()
             for hit in hits:
-                c.execute(sql, hit.__dict__)
-
+                try:
+                    c.execute(sql, (hit.ip, hit.filename, hit.is_download,
+                                    hit.session_time, hit.is_redirect,
+                                    hit.event_category, hit.event_action,
+                                    hit.lineno, hit.status, hit.is_error,
+                                    hit.event_name, hit.date, hit.path,
+                                    hit.extension, hit.referrer, hit.userid,
+                                    hit.length, hit.user_agent,
+                                    hit.generation_time_milli,
+                                    hit.query_string, hit.is_robot,
+                                    hit.full_path))
+                except Exception, e:
+                    print e
+        except Exception, e:
+            print e
+        self.connection.commit()
+        self.connection.close()
         stats.count_lines_recorded.advance(len(hits))
 
     def _is_json(self, result):
