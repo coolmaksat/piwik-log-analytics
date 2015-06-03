@@ -12,6 +12,7 @@ CREATE TABLE `icecast`.`access_log` (
   `is_error` TINYINT NULL,
   `event_name` VARCHAR(255) NULL,
   `date` DATETIME NULL,
+  `session_start_date` DATETIME NULL,
   `path` VARCHAR(255) NULL,
   `extension` VARCHAR(255) NULL,
   `referrer` VARCHAR(255) NULL,

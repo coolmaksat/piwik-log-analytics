@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # vim: et sw=4 ts=4:
 # -*- coding: utf-8 -*-
 #
@@ -37,6 +37,7 @@ import urlparse
 import functools
 import traceback
 import MySQLdb as mdb
+from datetime import timedelta
 
 try:
     import json
@@ -791,20 +792,6 @@ class Configuration(object):
                     fatal_error("cannot find named group in custom w3c field regex '%s' for field '%s'" % (field_regex, field_name))
                     return
 
-        if not self.options.piwik_url:
-            fatal_error('no URL given for Piwik')
-
-        if not (self.options.piwik_url.startswith('http://') or self.options.piwik_url.startswith('https://')):
-            self.options.piwik_url = 'http://' + self.options.piwik_url
-        logging.debug('Piwik URL is: %s', self.options.piwik_url)
-
-        if not self.options.piwik_token_auth:
-            try:
-                self.options.piwik_token_auth = self._get_token_auth()
-            except Piwik.Error, e:
-                fatal_error(e)
-        logging.debug('Authentication token token_auth is: %s', self.options.piwik_token_auth)
-
         if self.options.recorders < 1:
             self.options.recorders = 1
 
@@ -1147,23 +1134,26 @@ class Recorder(object):
         sql = """
             INSERT INTO access_log (ip, filename, is_download, session_time,
                 is_redirect, event_category, event_action, lineno, status,
-                is_error, event_name, date, path, extension, referrer, userid,
-                length, user_agent, generation_time_milli, query_string,
-                is_robot, full_path)
+                is_error, event_name, date, session_start_date, path,
+                extension, referrer, userid, length, user_agent,
+                generation_time_milli, query_string, is_robot, full_path)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         try:
             c = self.connection.cursor()
             for hit in hits:
+                hit.session_start_date = hit.date - timedelta(
+                    seconds=hit.session_time)
                 try:
                     c.execute(sql, (hit.ip, hit.filename, hit.is_download,
                                     hit.session_time, hit.is_redirect,
                                     hit.event_category, hit.event_action,
                                     hit.lineno, hit.status, hit.is_error,
-                                    hit.event_name, hit.date, hit.path,
-                                    hit.extension, hit.referrer, hit.userid,
-                                    hit.length, hit.user_agent,
+                                    hit.event_name, hit.date,
+                                    hit.session_start_date, hit.path,
+                                    hit.extension, hit.referrer,
+                                    hit.userid, hit.length, hit.user_agent,
                                     hit.generation_time_milli,
                                     hit.query_string, hit.is_robot,
                                     hit.full_path))
