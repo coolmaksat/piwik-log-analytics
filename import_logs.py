@@ -1143,22 +1143,23 @@ class Recorder(object):
         try:
             c = self.connection.cursor()
             for hit in hits:
-                hit.session_start_date = hit.date - timedelta(
-                    seconds=hit.session_time)
-                try:
-                    c.execute(sql, (hit.ip, hit.filename, hit.is_download,
-                                    hit.session_time, hit.is_redirect,
-                                    hit.event_category, hit.event_action,
-                                    hit.lineno, hit.status, hit.is_error,
-                                    hit.event_name, hit.date,
-                                    hit.session_start_date, hit.path,
-                                    hit.extension, hit.referrer,
-                                    hit.userid, hit.length, hit.user_agent,
-                                    hit.generation_time_milli,
-                                    hit.query_string, hit.is_robot,
-                                    hit.full_path))
-                except Exception, e:
-                    print e
+                if hit.session_time > 0:
+                    hit.session_start_date = hit.date - timedelta(
+                        seconds=hit.session_time)
+                    try:
+                        c.execute(sql, (hit.ip, hit.filename, hit.is_download,
+                                        hit.session_time, hit.is_redirect,
+                                        hit.event_category, hit.event_action,
+                                        hit.lineno, hit.status, hit.is_error,
+                                        hit.event_name, hit.date,
+                                        hit.session_start_date, hit.path,
+                                        hit.extension, hit.referrer,
+                                        hit.userid, hit.length, hit.user_agent,
+                                        hit.generation_time_milli,
+                                        hit.query_string, hit.is_robot,
+                                        hit.full_path))
+                    except Exception, e:
+                        print e
         except Exception, e:
             print e
         self.connection.commit()
