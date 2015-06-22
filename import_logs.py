@@ -1029,7 +1029,7 @@ class Recorder(object):
     recorders = []
 
     db_host = 'localhost'
-    db_name = 'icecast'
+    db_name = 'icestat'
     db_user = 'root'
     db_pass = ''
 
@@ -1132,13 +1132,16 @@ class Recorder(object):
             db=self.db_name, charset='utf8')
 
         sql = """
-            INSERT INTO access_log (ip, filename, is_download, session_time,
+            INSERT INTO statistics_access (ip, filename, is_download, session_time,
                 is_redirect, event_category, event_action, lineno, status,
                 is_error, event_name, date, session_start_date, path,
                 extension, referrer, userid, length, user_agent,
-                generation_time_milli, query_string, is_robot, full_path)
+                generation_time_milli, query_string, is_robot, full_path,
+                country_code, country, city, latitude, longitude,
+                region, region_name, organization)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s, %s)
         """
         try:
             c = self.connection.cursor()
@@ -1146,6 +1149,42 @@ class Recorder(object):
                 if hit.session_time > 0:
                     hit.session_start_date = hit.date - timedelta(
                         seconds=hit.session_time)
+                    user_info = hit.user_agent.split(":")
+                    hit.country_code = ''
+                    hit.country = ''
+                    hit.city = ''
+                    hit.latitude = ''
+                    hit.longitude = ''
+                    hit.region = ''
+                    hit.region_name = ''
+                    hit.organization = ''
+                    if len(user_info) == 1:
+                        hit.user_agent = user_info[0]
+                    elif len(user_info) == 6:
+                        hit.country_code = user_info[0]
+                        hit.country = user_info[1]
+                        hit.city = user_info[2]
+                        hit.latitude = user_info[3]
+                        hit.longitude = user_info[4]
+                        hit.user_agent = user_info[5]
+                    elif len(user_info) == 7:
+                        hit.country_code = user_info[0]
+                        hit.country = user_info[1]
+                        hit.city = user_info[2]
+                        hit.latitude = user_info[3]
+                        hit.longitude = user_info[4]
+                        hit.organization = user_info[5]
+                        hit.user_agent = user_info[6]
+                    elif len(user_info) == 9:
+                        hit.country_code = user_info[0]
+                        hit.country = user_info[1]
+                        hit.city = user_info[2]
+                        hit.latitude = user_info[3]
+                        hit.longitude = user_info[4]
+                        hit.region = user_info[5]
+                        hit.region_name = user_info[6]
+                        hit.organization = user_info[7]
+                        hit.user_agent = user_info[8]
                     try:
                         c.execute(sql, (hit.ip, hit.filename, hit.is_download,
                                         hit.session_time, hit.is_redirect,
@@ -1157,7 +1196,10 @@ class Recorder(object):
                                         hit.userid, hit.length, hit.user_agent,
                                         hit.generation_time_milli,
                                         hit.query_string, hit.is_robot,
-                                        hit.full_path))
+                                        hit.full_path, hit.country_code,
+                                        hit.country, hit.city, hit.latitude,
+                                        hit.longitude, hit.region,
+                                        hit.region_name, hit.organization))
                     except Exception, e:
                         print e
         except Exception, e:
